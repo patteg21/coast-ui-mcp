@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "node",
-    "outDir": "./build",
+    "outDir": "./dist",
     "rootDir": "./src",
     "jsx": "react-jsx",
     "strict": true,
@@ -21,6 +21,6 @@
   ],
   "exclude": [
     "node_modules",
-    "build"
+    "dist"
   ]
 }

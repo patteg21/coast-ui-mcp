@@ -2,3 +2,5 @@
 **/test_outputs/
 **/dist/
 build/
+test-output/
+output/

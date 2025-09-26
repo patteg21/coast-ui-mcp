@@ -9,11 +9,7 @@
     "start": "tsx src/index.ts",
     "build": "tsc",
     "serve": "node build/index.js",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "test:examples": "tsx tests/run-examples.ts",
-    "test:all": "npm run test:run && npm run test:examples"
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -32,11 +28,16 @@
   "homepage": "https://github.com/patteg21/coast-ui-mcp#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.2",
-    "react": "^19.1.1"
+    "@tailwindcss/postcss": "^4.1.13",
+    "postcss": "^8.5.6",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^4.1.13"
   },
   "devDependencies": {
     "@types/node": "^20.19.17",
     "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"

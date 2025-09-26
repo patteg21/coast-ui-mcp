@@ -1,36 +1,55 @@
 import { z } from "zod";
 
-const DSL_DOCUMENTATION = `
-Mobile Page Builder DSL - Comprehensive Method Reference:
+export const DSL_DOCUMENTATION = `
+Build mobile-optimized HTML pages using flexible DSL syntax with any object name and component composition
 
-🔥 CRITICAL: DSL MUST start with 'page.' (not 'createPage()' or anything else)
-✅ CORRECT: page.setTitle("My App").addHeader("Welcome").build()
-❌ WRONG: createPage().setTitle("My App").build()
+=% CRITICAL FEATURES:
+Flexible Object Naming: You can use ANY object name (page, part1, section1, hero2, etc.) - not just 'page'
+ Component Composition: Components can be passed into other components (grids can contain cards, sections can contain grids, etc.)
+ Object Registry: Created objects are stored and can be reused across multiple DSL calls
+ Cross-Component References: Objects can reference other stored objects as parameters
 
-BASIC STRUCTURE (REQUIRED):
-- page.setTitle("Page Title") - Set the HTML page title
-- page.build() - Generate final HTML (ALWAYS call this last, REQUIRED)
+BASIC STRUCTURE:
+- ANY_NAME.setTitle("Page Title") - Set the HTML page title (use any object name)
+- ANY_NAME.build() - Generate final HTML (ALWAYS call this last, REQUIRED)
+
+FLEXIBLE NAMING EXAMPLES:
+ CORRECT: page.setTitle("My App").addHeader("Welcome").build()
+ CORRECT: hero1.setTitle("Welcome").addSubtitle("Get started").build()
+ CORRECT: section2.addHeader("Features").build()
+ CORRECT: card1.setTitle("My Card").setContent("Content").build()
 
 NAVIGATION:
 - addNavbar({"brand": "Brand Name", "links": [{"text": "Home", "href": "/"}]}) - Add navigation bar
 
 CONTENT ELEMENTS:
 - addHeader("Text", level) - Add header (level: 1-3, default: 1)
-- addText("Text", size, weight) - Add text (size: "small"|"normal"|"large", weight: "normal"|"bold")
-- addContent("HTML content", "css-class") - Add content with optional CSS class
-- addButton("Text", "href", "type") - Add button (type: "primary"|"secondary")
+- addText("Text") - Add text
+- addContent("HTML content") - Add content
+- addButton("Text", "href") - Add button
 - addList(["Item 1", "Item 2"], ordered) - Add list (ordered: true for <ol>, false for <ul>)
 - addCard("Title", "Content", "Footer") - Add card component
 
 LAYOUT & SPACING:
-- addBreak("size") - Add spacing (size: "small"|"medium"|"large")
-- addSpacer("height") - Add custom height spacer (e.g., "2rem", "50px")
-- addDivider("style") - Add divider line (style: "solid"|"dashed"|"dotted")
+- addBreak() - Add spacing
+- addSpacer() - Add spacer
+- addDivider() - Add divider line
+- addGrid(columns) - Create responsive grid layout (1-6 columns)
+- addContainer() - Add container wrapper
+- addSection("title") - Add section with optional title
+
+COMPONENT COMPOSITION:
+- addComponent("componentName") - Add a previously built component by name
+- setColumns(number) - Set number of columns for grid layouts
+- setTitle("Title") - Set title for various components
+- setContent("Content") - Set content for components
+- setSubtitle("Subtitle") - Set subtitle for components
 
 FORM ELEMENTS:
 - addInput("type", "placeholder", "name") - Add input field (type: "text"|"email"|"tel"|"password", etc.)
 - addTextArea("placeholder", rows, "name") - Add textarea (rows: number, e.g., 4)
 - addSelect([{"value": "val", "text": "Text"}], "name", "placeholder") - Add dropdown select
+- addForm("action", "method") - Create form wrapper
 
 MEDIA:
 - addImage("src", "alt", "width", "height") - Add image (width/height optional)
@@ -38,124 +57,97 @@ MEDIA:
 
 LANDING PAGE COMPONENTS:
 - addHero({"title": "Main Title", "subtitle": "Subtitle", "primaryButton": "Get Started", "buttonText": "Action"}) - Hero section
-- addFeatureGrid({"title": "Features", "features": [{"icon": "🚀", "title": "Fast", "description": "Description"}]}) - Feature grid
-- addCodeBlock({"title": "Example", "subtitle": "Code example", "code": "curl -X GET...", "language": "bash"}) - Code block
-- addPricingTable({"title": "Pricing", "plans": [{"name": "Free", "price": "$0", "features": ["Feature 1"], "button": "Start"}]}) - Pricing table
-- addCards([{"title": "Title", "description": "Description", "icon": "🔥", "footer": "Optional footer"}]) - Card grid
-- addFooter({"text": "© 2024 MyApp", "links": [{"text": "Privacy", "href": "/privacy"}]}) - Page footer
+- addFeatureGrid({"title": "Features", "features": [{"icon": "=�", "title": "Fast", "description": "Description"}]}) - Feature grid with multiple items
+- addCodeBlock({"title": "Example", "subtitle": "Code example", "code": "curl -X GET...", "language": "bash"}) - Code block with syntax highlighting
+- addPricingTable({"title": "Pricing", "plans": [{"name": "Free", "price": "$0", "features": ["Feature 1"], "button": "Start"}]}) - Pricing table with multiple plans
+- addCards([{"title": "Title", "description": "Description", "icon": "=%", "footer": "Optional footer"}]) - Card grid with multiple cards
+- addFooter({"text": "� 2024 MyApp", "links": [{"text": "Privacy", "href": "/privacy"}]}) - Page footer
 
-ADVANCED:
+ADVANCED COMPOSITION:
 - addRawHTML("<div>Custom HTML</div>") - Insert raw HTML directly
 
-BUILDER PATTERNS (Advanced):
-- addGrid(columns).addItem("content").addItem("content").end() - Create grid layout
-- addContainer("css-class").addContent("content").end() - Create container
-- addSection("title", "css-class").addContent("content").end() - Create section
-- addForm("action", "method").addInput("text", "name").addSubmitButton("Submit").end() - Create form
+COMPONENT COMPOSITION PATTERNS:
 
-DESIGN SYSTEM:
-The builder supports comprehensive design customization through the 'design' parameter:
+" Reusable Components: Create components with any name
+  card1.setTitle("My Card").build()
+  hero2.setTitle("Welcome").build()
+  section1.setTitle("Features").build()
 
-THEMES: Pre-built themes that set colors, typography, and spacing
-- "default" - Clean blue and gray theme
-- "dark" - Dark mode with light text
-- "light" - Minimal light theme
-- "corporate" - Professional business theme
-- "modern" - Contemporary with bold colors
-- "playful" - Vibrant and fun theme
+" Pass Components into Other Components:
+  grid1.setColumns(2).addComponent("card1").addComponent("card1").build()
+  section1.addComponent("hero2").addComponent("grid1").build()
+  page.addComponent("section1").build()
 
-CUSTOM COLORS: Override any color in the system
-- primary, secondary - Brand colors for buttons and accents
-- background, surface - Page and card backgrounds
-- text, textSecondary - Text colors
-- success, warning, error - State colors
-- navbar, navbarText - Navigation colors
+" Complex Nested Composition:
+  innerCard.setTitle("Inner").build()
+  innerGrid.addComponent("innerCard").build()
+  section.addComponent("innerGrid").build()
+  page.addComponent("section").build()
 
-TYPOGRAPHY: Control fonts and text styling
-- fontFamily - Font stack (e.g., "Inter", "system-ui")
-- fontSize - Base size: "small", "normal", "large"
-- fontWeight - Base weight: "light", "normal", "medium", "bold"
-- lineHeight - Line height multiplier (1.4, 1.6, etc.)
-
-SPACING: Control layout and spacing
-- scale - Overall density: "compact", "normal", "spacious"
-- containerPadding - Container padding
-- elementSpacing - Space between elements
-
-STYLING: Visual appearance options
-- borderRadius - Corner style: "none", "small", "normal", "large", "full"
-- shadows - Enable/disable drop shadows
+" Multiple Subcomponents: Most components support arrays for multiple items
+  - addFeatureGrid() supports multiple features in the features array
+  - addCards() supports multiple cards in the cards array
+  - addPricingTable() supports multiple plans in the plans array
+  - addNavbar() supports multiple links in the links array
 
 EXAMPLE CHAINS:
-Simple: page.setTitle("My App").addHeader("Welcome").addText("Hello world").addButton("Start", "/start").build()
 
-Landing Page: page.setTitle("DevAPI - REST API")
-  .addNavbar({"brand": "DevAPI", "links": ["Docs", "Pricing", "Support"]})
-  .addHero({"title": "Build faster with our API", "subtitle": "Simple and powerful", "primaryButton": "Get Started"})
-  .addFeatureGrid({"title": "Features", "features": [{"icon": "🚀", "title": "Fast", "description": "Sub-100ms responses"}]})
-  .addPricingTable({"title": "Pricing", "plans": [{"name": "Free", "price": "$0", "features": ["1,000 requests"], "button": "Start"}]})
-  .build()
+Simple Page: page.setTitle("My App").addHeader("Welcome").addText("Hello world").addButton("Start", "/start").build()
 
-With Design: Use 'design' parameter to apply themes and custom styling
-- theme: "dark" for dark mode
-- colors: {primary: "#ff6b6b", background: "#1a1a1a"}
-- typography: {fontFamily: "Inter", fontSize: "large"}
+Modular Landing Page with Component Composition:
+  // Create reusable components
+  navComponent.addNavbar({"brand": "DevAPI", "links": [{"text": "Docs", "href": "/docs"}]}).build()
 
-Contact Form: page.setTitle("Contact")
-  .addNavbar({"brand": "MyApp", "links": [{"text": "Home", "href": "/"}]})
-  .addHeader("Contact Us")
-  .addInput("text", "Your Name", "name")
-  .addInput("email", "Email", "email")
-  .addTextArea("Message", 5, "message")
-  .addButton("Send", "/submit")
-  .build()
+  heroSection.addHero({"title": "Build faster with our API", "subtitle": "Simple and powerful", "primaryButton": "Get Started"}).build()
 
-All methods return the page builder for chaining, except build() which returns HTML string.
+  feature1.setTitle("Fast").setContent("Sub-100ms responses").build()
+  feature2.setTitle("Secure").setContent("Enterprise-grade security").build()
+
+  featureGrid.setColumns(2).addComponent("feature1").addComponent("feature2").build()
+
+  mainSection.setTitle("Features").addComponent("featureGrid").build()
+
+  // Compose final page
+  page.setTitle("DevAPI - REST API")
+    .addComponent("navComponent")
+    .addComponent("heroSection")
+    .addComponent("mainSection")
+    .build()
+
+Multi-Section Form with Nested Components:
+  // Create form sections
+  personalInfo.setTitle("Personal Information")
+    .addGrid(2)
+    .addInput("text", "First Name", "firstName")
+    .addInput("text", "Last Name", "lastName")
+    .build()
+
+  contactInfo.setTitle("Contact Details")
+    .addInput("email", "Email", "email")
+    .addInput("tel", "Phone", "phone")
+    .build()
+
+  messageSection.setTitle("Message")
+    .addTextArea("Your message", 5, "message")
+    .build()
+
+  // Compose complete form
+  contactForm.setTitle("Contact Us")
+    .addComponent("personalInfo")
+    .addComponent("contactInfo")
+    .addComponent("messageSection")
+    .addButton("Send Message", "/submit")
+    .build()
+
+  // Final page
+  page.setTitle("Contact")
+    .addNavbar({"brand": "MyApp", "links": [{"text": "Home", "href": "/"}]})
+    .addComponent("contactForm")
+    .build()
+
+All methods return the component builder for chaining, except build() which returns HTML string.
+Objects are stored in a registry and can be reused across multiple DSL calls.
 `;
-
-export const ColorSchemeSchema = z.object({
-  primary: z.string().optional().describe("Primary brand color (hex, rgb, or css color name)"),
-  secondary: z.string().optional().describe("Secondary accent color"),
-  background: z.string().optional().describe("Page background color"),
-  surface: z.string().optional().describe("Card/container background color"),
-  text: z.string().optional().describe("Primary text color"),
-  textSecondary: z.string().optional().describe("Secondary/muted text color"),
-  success: z.string().optional().describe("Success state color (green)"),
-  warning: z.string().optional().describe("Warning state color (yellow/orange)"),
-  error: z.string().optional().describe("Error state color (red)"),
-  navbar: z.string().optional().describe("Navigation bar background color"),
-  navbarText: z.string().optional().describe("Navigation bar text color")
-});
-
-export const TypographySchema = z.object({
-  fontFamily: z.string().optional().describe("Font family (e.g., 'Inter', 'Roboto', 'system-ui')"),
-  fontSize: z.enum(["small", "normal", "large"]).optional().default("normal").describe("Base font size"),
-  fontWeight: z.enum(["light", "normal", "medium", "bold"]).optional().default("normal").describe("Base font weight"),
-  lineHeight: z.number().optional().describe("Line height multiplier (e.g., 1.5, 1.6)")
-});
-
-export const SpacingSchema = z.object({
-  scale: z.enum(["compact", "normal", "spacious"]).optional().default("normal").describe("Overall spacing scale"),
-  containerPadding: z.string().optional().describe("Container padding (e.g., '1rem', '20px')"),
-  elementSpacing: z.string().optional().describe("Space between elements (e.g., '1rem', '16px')")
-});
-
-export const DesignSystemSchema = z.object({
-  theme: z.enum(["default", "dark", "light", "corporate", "modern", "playful"]).optional().default("default").describe("Pre-built design theme"),
-  colors: ColorSchemeSchema.optional().describe("Custom color scheme (overrides theme colors)"),
-  typography: TypographySchema.optional().describe("Typography settings"),
-  spacing: SpacingSchema.optional().describe("Spacing and layout settings"),
-  borderRadius: z.enum(["none", "small", "normal", "large", "full"]).optional().default("normal").describe("Border radius style"),
-  shadows: z.boolean().optional().default(true).describe("Enable drop shadows on cards and buttons")
-});
-
-export const BuilderInputSchema = z.object({
-  dsl: z.string().describe(`DSL string for building mobile-optimized UI components. ${DSL_DOCUMENTATION}`),
-  screenSize: z.enum(["phone", "tablet", "desktop"]).optional().default("phone").describe("Target screen size for responsive design"),
-  design: DesignSystemSchema.optional().describe("Design system configuration including colors, typography, spacing, and theme")
-});
-
-export type BuilderInput = z.infer<typeof BuilderInputSchema>;
 
 export const BuilderResponseSchema = z.object({
   html: z.string().describe("Generated HTML content"),

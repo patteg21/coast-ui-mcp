@@ -1,0 +1,1 @@
+Being able to pass components to components to do multi build renders on a page
