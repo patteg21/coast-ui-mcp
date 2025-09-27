@@ -12,8 +12,8 @@ interface ParsedDSL {
 
 class DSLParser {
   parse(dslString: string): ParsedDSL {
-    // Clean the string - remove extra whitespace
-    const cleaned = dslString.trim();
+    // Clean the string - remove comments and extra whitespace
+    const cleaned = this.removeComments(dslString).trim();
 
     // Extract object name (before first dot)
     const firstDotIndex = cleaned.indexOf('.');
@@ -28,6 +28,50 @@ class DSLParser {
     const methodChain = this.parseMethodChain(methodsString);
 
     return { objectName, methodChain };
+  }
+
+  removeComments(input: string): string {
+    const lines = input.split('\n');
+    const cleanedLines: string[] = [];
+
+    for (const line of lines) {
+      // Remove single-line comments (// ...) but preserve content inside strings
+      let cleaned = '';
+      let inString = false;
+      let stringChar = '';
+      let i = 0;
+
+      while (i < line.length) {
+        const char = line[i];
+        const nextChar = line[i + 1];
+
+        if (!inString && (char === '"' || char === "'")) {
+          // Entering a string
+          inString = true;
+          stringChar = char;
+          cleaned += char;
+        } else if (inString && char === stringChar && line[i - 1] !== '\\') {
+          // Exiting a string (not escaped)
+          inString = false;
+          stringChar = '';
+          cleaned += char;
+        } else if (!inString && char === '/' && nextChar === '/') {
+          // Found comment outside of string, ignore rest of line
+          break;
+        } else {
+          cleaned += char;
+        }
+        i++;
+      }
+
+      // Only add non-empty lines after trimming
+      const trimmedLine = cleaned.trim();
+      if (trimmedLine) {
+        cleanedLines.push(trimmedLine);
+      }
+    }
+
+    return cleanedLines.join('\n');
   }
 
   private parseMethodChain(methodsString: string): MethodCall[] {
@@ -151,6 +195,16 @@ class ComponentBuilder {
     return this;
   }
 
+  setContent(content: string): ComponentBuilder {
+    this.props.content = content;
+    return this;
+  }
+
+  setSubtitle(subtitle: string): ComponentBuilder {
+    this.props.subtitle = subtitle;
+    return this;
+  }
+
   setColumns(columns: number): ComponentBuilder {
     this.props.columns = columns;
     return this;
@@ -193,6 +247,82 @@ class ComponentBuilder {
 
   addHeader(text: string, level: number = 1): ComponentBuilder {
     return this.add({ type: 'header', text, level });
+  }
+
+  addSection(title?: string): ComponentBuilder {
+    return this.add({ type: 'section', title });
+  }
+
+  addBreak(): ComponentBuilder {
+    return this.add({ type: 'break' });
+  }
+
+  addSpacer(): ComponentBuilder {
+    return this.add({ type: 'spacer' });
+  }
+
+  addDivider(): ComponentBuilder {
+    return this.add({ type: 'divider' });
+  }
+
+  addGrid(columns: number): ComponentBuilder {
+    return this.add({ type: 'grid', columns, children: [] });
+  }
+
+  addContent(content: string): ComponentBuilder {
+    return this.add({ type: 'content', content });
+  }
+
+  addNavbar(config: any): ComponentBuilder {
+    // If this is already a navbar component, set properties directly
+    if (this.componentType === 'navbar') {
+      this.props.brand = config.brand;
+      this.props.links = config.links;
+      return this;
+    }
+    return this.add({ type: 'navbar', brand: config.brand, links: config.links });
+  }
+
+  addHero(config: any): ComponentBuilder {
+    // If this is already a hero component, set properties directly
+    if (this.componentType === 'hero') {
+      this.props.title = config.title;
+      this.props.subtitle = config.subtitle;
+      this.props.primaryButton = config.primaryButton;
+      this.props.buttonText = config.buttonText;
+      return this;
+    }
+    return this.add({ type: 'hero', title: config.title, subtitle: config.subtitle, primaryButton: config.primaryButton, buttonText: config.buttonText });
+  }
+
+  addFeatureGrid(config: any): ComponentBuilder {
+    // If this is already a featureGrid component, set properties directly
+    if (this.componentType === 'featureGrid') {
+      this.props.title = config.title;
+      this.props.features = config.features;
+      return this;
+    }
+    return this.add({ type: 'featureGrid', title: config.title, features: config.features });
+  }
+
+  addPricingTable(config: any): ComponentBuilder {
+    return this.add({ type: 'pricingTable', ...config });
+  }
+
+  addCodeBlock(config: any): ComponentBuilder {
+    return this.add({ type: 'codeBlock', ...config });
+  }
+
+  addFooter(config: any): ComponentBuilder {
+    return this.add({ type: 'footer', ...config });
+  }
+
+  addSelect(options: Array<{value: string; text: string}>, name?: string, placeholder?: string): ComponentBuilder {
+    return this.add({ type: 'select', options, name, placeholder });
+  }
+
+  addTextArea(placeholder?: string, rows?: number, name?: string): ComponentBuilder {
+    return this.add({ type: 'textarea', placeholder, rows, name });
   }
 }
 
@@ -286,52 +416,96 @@ export class BuilderDSL {
 
   execute(dslString: string): any {
     try {
-      const parsed = this.parser.parse(dslString);
-      let builder;
+      // Check if the input contains multiple DSL commands
+      const commands = this.splitDSLCommands(dslString);
 
-      // Check if we're referencing an existing object
-      if (this.registry.hasObject(parsed.objectName)) {
-        builder = this.registry.getObject(parsed.objectName);
+      if (commands.length === 1) {
+        // Single command - existing logic
+        return this.executeSingle(commands[0]);
       } else {
-        builder = this.registry.createBuilder(parsed.objectName);
-      }
-
-      // Execute method chain
-      let result = builder;
-      for (const method of parsed.methodChain) {
-        if (typeof result[method.name] !== 'function') {
-          throw new Error(`Method '${method.name}' not found on ${parsed.objectName}`);
+        // Multiple commands - execute all and return the last result
+        let lastResult;
+        for (const command of commands) {
+          lastResult = this.executeSingle(command);
         }
-
-        // Process parameters to handle component references
-        const processedParams = method.params.map(param => {
-          if (typeof param === 'string' && this.registry.hasObject(param)) {
-            // If parameter is a reference to a stored object, get the actual object or its built form
-            const obj = this.registry.getObject(param);
-            // If it's a component builder, return its built form
-            if (obj && typeof obj.build === 'function') {
-              return obj.build();
-            }
-            return obj;
-          }
-          return param;
-        });
-
-        result = result[method.name](...processedParams);
+        return lastResult;
       }
-
-      // If the result is a builder and has changed, store it for reuse
-      if (result && result !== builder) {
-        this.registry.storeObject(parsed.objectName, result);
-      } else if (builder && result === builder) {
-        // Store the builder itself for chaining
-        this.registry.storeObject(parsed.objectName, builder);
-      }
-
-      return result;
     } catch (error) {
       throw new Error(`DSL Execution Error: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  private splitDSLCommands(dslString: string): string[] {
+    // Remove comments first
+    const cleaned = this.parser.removeComments(dslString);
+
+    // Split into individual commands (each should end with .build() or similar)
+    const lines = cleaned.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    const commands: string[] = [];
+    let currentCommand = '';
+
+    for (const line of lines) {
+      currentCommand += ' ' + line;
+
+      // Check if this line completes a command (ends with .build() or similar terminating method)
+      if (line.includes('.build()') || line.includes('.end()')) {
+        commands.push(currentCommand.trim());
+        currentCommand = '';
+      }
+    }
+
+    // Add any remaining command
+    if (currentCommand.trim()) {
+      commands.push(currentCommand.trim());
+    }
+
+    return commands;
+  }
+
+  private executeSingle(dslCommand: string): any {
+    const parsed = this.parser.parse(dslCommand);
+    let builder;
+
+    // Check if we're referencing an existing object
+    if (this.registry.hasObject(parsed.objectName)) {
+      builder = this.registry.getObject(parsed.objectName);
+    } else {
+      builder = this.registry.createBuilder(parsed.objectName);
+    }
+
+    // Execute method chain
+    let result = builder;
+    for (const method of parsed.methodChain) {
+      if (typeof result[method.name] !== 'function') {
+        throw new Error(`Method '${method.name}' not found on ${parsed.objectName}`);
+      }
+
+      // Process parameters to handle component references
+      const processedParams = method.params.map(param => {
+        if (typeof param === 'string' && this.registry.hasObject(param)) {
+          // If parameter is a reference to a stored object, get the actual object or its built form
+          const obj = this.registry.getObject(param);
+          // If it's a component builder, return its built form
+          if (obj && typeof obj.build === 'function') {
+            return obj.build();
+          }
+          return obj;
+        }
+        return param;
+      });
+
+      result = result[method.name](...processedParams);
+    }
+
+    // If the result is a builder and has changed, store it for reuse
+    if (result && result !== builder) {
+      this.registry.storeObject(parsed.objectName, result);
+    } else if (builder && result === builder) {
+      // Store the builder itself for chaining
+      this.registry.storeObject(parsed.objectName, builder);
+    }
+
+    return result;
   }
 
   // Execute multiple DSL strings and return the registry for object access

@@ -477,23 +477,50 @@ export class PageBuilder {
     const { type, props } = config;
 
     // Handle special component types
-    if (type === 'Hero') {
+    if (type === 'Hero' || type === 'hero') {
       return this.renderHero(props);
     }
-    if (type === 'Card') {
+    if (type === 'Card' || type === 'card') {
       return this.renderCard(props);
     }
-    if (type === 'Navbar') {
+    if (type === 'Navbar' || type === 'navbar') {
       return this.renderNavbar(props);
     }
-    if (type === 'grid') {
+    if (type === 'grid' || type === 'Grid') {
       return this.renderGrid(props);
     }
-    if (type === 'section') {
+    if (type === 'section' || type === 'Section') {
       return this.renderSection(props);
     }
-    if (type === 'container') {
+    if (type === 'container' || type === 'Container') {
       return this.renderContainer(props);
+    }
+    if (type === 'text' || type === 'Text') {
+      return this.renderText(props);
+    }
+    if (type === 'footer' || type === 'Footer') {
+      return this.renderFooter(props);
+    }
+    if (type === 'form' || type === 'Form') {
+      return this.renderForm(props);
+    }
+    if (type === 'featureGrid' || type === 'FeatureGrid') {
+      return this.renderFeatureGrid(props);
+    }
+    if (type === 'pricingTable' || type === 'PricingTable') {
+      return this.renderPricingTable(props);
+    }
+    if (type === 'codeBlock' || type === 'CodeBlock') {
+      return this.renderCodeBlock(props);
+    }
+    if (type === 'break' || type === 'Break') {
+      return `<div class="my-4"></div>`;
+    }
+    if (type === 'spacer' || type === 'Spacer') {
+      return `<div class="my-8"></div>`;
+    }
+    if (type === 'divider' || type === 'Divider') {
+      return `<hr class="my-6 border-gray-300" />`;
     }
 
     // Handle regular HTML elements
@@ -544,28 +571,61 @@ export class PageBuilder {
     if (child && typeof child === 'object') {
       // Handle component objects from ComponentBuilder
       if (child.isComponent || child.type) {
+        // For simple content objects like {type: "text", content: "..."}, extract the content
+        let props;
+        if (child.props) {
+          props = child.props;
+        } else {
+          // Create props by copying all properties except 'type' and 'isComponent'
+          props = { ...child };
+          delete props.type;
+          delete props.isComponent;
+        }
+
         return this.renderComponent({
           type: child.type,
-          props: child.props || {},
+          props: props,
           component: child.component || this.getComponentMap()[child.type] || null
         });
       }
 
       // Handle simple content objects
       if (child.type === 'text') {
-        return `<p>${child.content}</p>`;
+        const content = child.content || child.text || child.children || '';
+        return `<p class="mb-4">${content}</p>`;
       }
       if (child.type === 'button') {
         return `<a href="${child.href || '#'}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">${child.text}</a>`;
       }
       if (child.type === 'input') {
-        return `<input type="${child.inputType || 'text'}" placeholder="${child.placeholder || ''}" name="${child.name || ''}" class="border rounded px-3 py-2" />`;
+        return `<input type="${child.inputType || 'text'}" placeholder="${child.placeholder || ''}" name="${child.name || ''}" class="border rounded px-3 py-2 w-full" />`;
+      }
+      if (child.type === 'select') {
+        const optionsHtml = (child.options || []).map((opt: any) =>
+          `<option value="${opt.value}">${opt.text}</option>`
+        ).join('');
+        return `<select name="${child.name || ''}" class="border rounded px-3 py-2 w-full">${child.placeholder ? `<option value="">${child.placeholder}</option>` : ''}${optionsHtml}</select>`;
+      }
+      if (child.type === 'textarea') {
+        return `<textarea placeholder="${child.placeholder || ''}" name="${child.name || ''}" rows="${child.rows || 4}" class="border rounded px-3 py-2 w-full">${child.value || ''}</textarea>`;
       }
       if (child.type === 'card') {
         return this.renderCard(child);
       }
       if (child.type === 'header') {
         return `<h${child.level || 1} class="mobile-header">${child.text}</h${child.level || 1}>`;
+      }
+      if (child.type === 'content') {
+        return `<div>${child.content || ''}</div>`;
+      }
+      if (child.type === 'break') {
+        return `<div class="my-4"></div>`;
+      }
+      if (child.type === 'spacer') {
+        return `<div class="my-8"></div>`;
+      }
+      if (child.type === 'divider') {
+        return `<hr class="my-6 border-gray-300" />`;
       }
 
       // Handle built component objects that need special rendering
@@ -591,6 +651,25 @@ export class PageBuilder {
         }
         if (child.type === 'form') {
           return this.renderForm(child.props || child);
+        }
+        if (child.type === 'featureGrid') {
+          return this.renderFeatureGrid(child.props || child);
+        }
+        if (child.type === 'pricingTable') {
+          return this.renderPricingTable(child.props || child);
+        }
+        if (child.type === 'codeBlock') {
+          return this.renderCodeBlock(child.props || child);
+        }
+
+        // Handle generic component types that might be component objects
+        const componentMap = this.getComponentMap();
+        if (componentMap[child.type] || child.type === 'text') {
+          return this.renderComponent({
+            type: child.type,
+            props: child.props || child,
+            component: componentMap[child.type]
+          });
         }
       }
 
@@ -629,12 +708,14 @@ export class PageBuilder {
   }
 
   private renderContainer(props: any): string {
+    const title = props.title ? `<h3 class="text-lg font-semibold mb-2">${props.title}</h3>` : '';
     const childrenHtml = Array.isArray(props.children)
       ? props.children.map((child: any) => this.renderChildComponent(child)).join('')
       : '';
 
     return `
       <div class="container mx-auto px-4">
+        ${title}
         ${childrenHtml}
       </div>
     `;
@@ -656,14 +737,97 @@ export class PageBuilder {
   }
 
   private renderForm(props: any): string {
+    const title = props.title ? `<h3 class="text-lg font-semibold mb-4">${props.title}</h3>` : '';
     const childrenHtml = Array.isArray(props.children)
       ? props.children.map((child: any) => this.renderChildComponent(child)).join('')
       : '';
 
     return `
-      <form action="${props.action || ''}" method="${props.method || 'post'}" class="space-y-4">
-        ${childrenHtml}
-      </form>
+      <div class="form-container">
+        ${title}
+        <form action="${props.action || ''}" method="${props.method || 'post'}" class="space-y-4">
+          ${childrenHtml}
+        </form>
+      </div>
+    `;
+  }
+
+  private renderText(props: any): string {
+    // Handle text content from various possible properties
+    const textContent = props.content || props.text || props.children || '';
+    if (Array.isArray(textContent)) {
+      return textContent.map(child => this.renderChildComponent(child)).join('');
+    }
+    return `<p class="mb-4">${textContent}</p>`;
+  }
+
+  private renderFeatureGrid(props: any): string {
+    const title = props.title ? `<h2 class="text-3xl font-bold text-center mb-12 text-gray-900">${props.title}</h2>` : '';
+    const features = props.features || [];
+
+    const featuresHtml = features.map((feature: any) => `
+      <div class="text-center p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
+        ${feature.icon ? `<div class="text-4xl mb-4">${feature.icon}</div>` : ''}
+        <h3 class="text-xl font-semibold mb-3 text-gray-900">${feature.title}</h3>
+        <p class="text-gray-600">${feature.description}</p>
+      </div>
+    `).join('');
+
+    return `
+      <section class="py-16 bg-gray-50">
+        ${title}
+        <div class="max-w-7xl mx-auto px-4">
+          <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            ${featuresHtml}
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  private renderPricingTable(props: any): string {
+    const title = props.title ? `<h2 class="text-3xl font-bold text-center mb-12 text-gray-900">${props.title}</h2>` : '';
+    const plans = props.plans || [];
+
+    const plansHtml = plans.map((plan: any) => `
+      <div class="bg-white rounded-lg shadow-md p-8 ${plan.featured ? 'ring-2 ring-blue-500' : ''}">
+        <h3 class="text-2xl font-bold mb-4">${plan.name}</h3>
+        <div class="text-4xl font-bold mb-6">${plan.price}<span class="text-lg text-gray-600">/month</span></div>
+        <ul class="space-y-3 mb-8">
+          ${plan.features.map((feature: string) => `<li class="flex items-center"><span class="text-green-500 mr-2">✓</span>${feature}</li>`).join('')}
+        </ul>
+        <button class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">
+          ${plan.button}
+        </button>
+      </div>
+    `).join('');
+
+    return `
+      <section class="py-16">
+        ${title}
+        <div class="max-w-6xl mx-auto px-4">
+          <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            ${plansHtml}
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  private renderCodeBlock(props: any): string {
+    const title = props.title ? `<h2 class="text-2xl font-bold mb-4">${props.title}</h2>` : '';
+    const subtitle = props.subtitle ? `<p class="text-gray-600 mb-6">${props.subtitle}</p>` : '';
+
+    return `
+      <section class="py-12">
+        <div class="max-w-4xl mx-auto px-4">
+          ${title}
+          ${subtitle}
+          <div class="bg-gray-900 rounded-lg p-6 overflow-x-auto">
+            <pre class="text-green-400 text-sm"><code>${props.code || ''}</code></pre>
+          </div>
+        </div>
+      </section>
     `;
   }
 
